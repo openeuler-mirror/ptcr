@@ -74,7 +74,7 @@ void WrapContInfoCls::PrintAllContInfo()
     for (auto item : m_wrapContInfo) {
         cout << "-----------client: " << item->m_RtWrapper->m_endPoint << endl;
         for (auto i : item->m_ContInfo) {
-            cout << "contid: " << i->contId << " state: " << i->stat << endl;
+            cout << "contid: " << *i->contId << " state: " << i->stat << endl;
         }
     }
 }

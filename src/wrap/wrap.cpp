@@ -238,8 +238,10 @@ int MeasureRunInterface(Run_Cont_Args_T *runArgs)
     int ret = runArgs->wm->runContainer(runArgs->imageName, runArgs->runCmd, runArgs->contID);
     gettimeofday(&now, NULL);
 
-    // save running container id for clean resource.
-    WrapContInfoCls::GetInstance()->ContBindWrapper(runArgs->contID, STAT_RUNNING, runArgs->wm);
+    if (ret == 0) {
+        // save running container id for clean resource.
+        WrapContInfoCls::GetInstance()->ContBindWrapper(runArgs->contID, STAT_RUNNING, runArgs->wm);
+    }
 
     *(runArgs->spentUs) = (now.tv_usec - before.tv_usec) + (now.tv_sec - before.tv_sec) * 1000000;
 
