@@ -89,8 +89,9 @@ void utils_free_arr(char ***arr)
 {
     int i = 0;
 
-    while ((*arr)[i] == NULL) {
+    while ((*arr)[i] != NULL) {
         free((*arr)[i]);
+        i++;
     }
 
     free(*arr);
