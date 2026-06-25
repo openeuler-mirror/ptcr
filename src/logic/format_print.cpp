@@ -31,8 +31,12 @@ void MeasureResultCls::PrintAllResult()
 {
     cout << "action\t|""count\t\t|""total spent\t\t|""average spent" << endl;
     for (auto item : m_measureResultVect) {
+        long int avgSpent = 0;
+        if (item->Cnt > 2) {
+            avgSpent = (item->totalSpent - item->maxSpent - item->minSpent) / (item->Cnt - 2);
+        }
         cout << item->interfaceDesc << "\t|" << item->Cnt << "\t\t|" << item->totalSpent / 1000 <<
-             "\t\t\t|" << (item->totalSpent - item->maxSpent - item->minSpent) / (item->Cnt - 2) / 1000 << endl;
+             "\t\t\t|" << avgSpent / 1000 << endl;
     }
 }
 
@@ -102,6 +106,11 @@ void FormatPrintCls::GenerateReport(std::string &filePath)
         return;
     }
 
+    if (m_measureResClsVect[0]->m_measureResultVect.empty()) {
+        fclose(pF);
+        return;
+    }
+
     fprintf(pF, __DATE__ " " __TIME__ " %d times ptcr result\n",
             m_measureResClsVect[0]->m_measureResultVect[0]->Cnt);
 
@@ -113,7 +122,11 @@ void FormatPrintCls::GenerateReport(std::string &filePath)
     for (auto outter : m_measureResClsVect) {
         string context = outter->m_measureDesc + "_" + outter->m_endPoint + " ";
         for (auto inner : outter->m_measureResultVect) {
-            context += to_string((inner->totalSpent / inner->Cnt / 1000)) + " ";
+            long int avg = 0;
+            if (inner->Cnt > 0) {
+                avg = inner->totalSpent / inner->Cnt / 1000;
+            }
+            context += to_string(avg) + " ";
         }
         fprintf(pF, "%s\n", context.c_str());
     }
