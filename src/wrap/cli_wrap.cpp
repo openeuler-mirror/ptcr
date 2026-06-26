@@ -77,7 +77,7 @@ int cliWrapperCls::runContainer(string &imageName, vector<string> &cmd, string *
     for (auto item : cmd) {
         argv[i++] = strdup(item.c_str());
     }
-    argv[argc] = NULL;
+    argv[i] = NULL;
 
     int ret = utils_execute_process(m_cliName.c_str(), (char * const *)argv);
     *contStr = cont_id;
