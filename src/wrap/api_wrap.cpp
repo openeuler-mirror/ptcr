@@ -255,6 +255,7 @@ ApiWrapperCls::~ApiWrapperCls()
     m_criClient->RemovePodSandBox(m_podID);
 
     delete m_criClient;
+    delete m_imageClient;
 }
 
 int ApiWrapperCls::pullImage(string &imageName)
@@ -309,6 +310,6 @@ int ApiWrapperCls::rmContainer(string ContId)
     int ret = m_criClient->RemoveContainer(ContId);
     LOG_DEBUG("Remove cont:%s ret:%d\n", ContId.c_str(), ret);
 
-    return 0;
+    return ret;
 }
 #endif // #ifdef CRI_CLIENT
