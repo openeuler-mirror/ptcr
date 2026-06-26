@@ -34,6 +34,7 @@ int MeasureMemImpl::PsShimOutsideFunc()
         string endpoint = it->first;
         wrapperManager *wm = new wrapperManager(CONNECT_BY_CLI, endpoint);
         if (wm->init()) {
+            delete wm;
             break;
         }
 
@@ -42,10 +43,26 @@ int MeasureMemImpl::PsShimOutsideFunc()
             wm->runContainer(m_config->m_imageName, m_config->m_runContCmd, contID);
 
             char *finalID = (char *)UTILS_CALLOC(sizeof(char) * CONTAINER_ID_SIZE, RET_OUT_OF_MEMORY);
-            int ret = get_cont_id_by_name(endpoint.c_str(), contID->c_str(), finalID);
-            int rss;
-            read_memory(finalID, &rss);
+            ret = get_cont_id_by_name(endpoint.c_str(), contID->c_str(), finalID);
             if (ret != 0) {
+                wm->stopContainer(*contID, m_config->m_timeOut);
+                wm->rmContainer(*contID);
+                free(finalID);
+                delete contID;
+                wm->Deinit();
+                delete wm;
+                return ret;
+            }
+
+            int rss;
+            ret = read_memory(finalID, &rss);
+            if (ret != 0) {
+                wm->stopContainer(*contID, m_config->m_timeOut);
+                wm->rmContainer(*contID);
+                free(finalID);
+                delete contID;
+                wm->Deinit();
+                delete wm;
                 return ret;
             }
             it->second += rss;
@@ -53,6 +70,7 @@ int MeasureMemImpl::PsShimOutsideFunc()
             wm->stopContainer(*contID, m_config->m_timeOut);
             wm->rmContainer(*contID);
             free(finalID);
+            delete contID;
         }
 
         Mem_Shim_T *shim = (Mem_Shim_T *)UTILS_CALLOC(sizeof(Mem_Shim_T), RET_OUT_OF_MEMORY);
@@ -62,6 +80,7 @@ int MeasureMemImpl::PsShimOutsideFunc()
         FormatPrintCls::GetInstance()->InsertShimRes(shim);
 
         wm->Deinit();
+        delete wm;
     }
 
     return ret;

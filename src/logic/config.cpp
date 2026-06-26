@@ -141,6 +141,10 @@ int MeasureConfigCls::Init()
 
 void MeasureConfigCls::Deinit()
 {
+    for (auto item : m_measureWayVect) {
+        free(item);
+    }
+    m_measureWayVect.clear();
 }
 
 static LOG_LERVER_E OptArgToLoglever(string &optarg)

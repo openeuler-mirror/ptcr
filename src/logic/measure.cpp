@@ -17,6 +17,7 @@
 #include "memory.h"
 #include <sys/time.h>
 #include <thread>
+#include <mutex>
 #include "logger.h"
 #include "utils.h"
 #include "container_manager.h"
@@ -335,11 +336,14 @@ public:
                          MixCmdCls *mixedRun);
 private:
     vector<std::thread *> m_stdThrds;
+    std::mutex m_mixedCmdMutex;
 };
 
 int MeasureParallyCls::ParallyMixedThrd
 (MixCmdCls *mixedCreate, MixCmdCls *mixedStart, MixCmdCls *mixedStop, MixCmdCls *mixedRemove, MixCmdCls *mixedRun)
 {
+    std::lock_guard<std::mutex> lock(m_mixedCmdMutex);
+
     int ret = 0;
     string *contID = new string;
 
