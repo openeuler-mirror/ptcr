@@ -20,7 +20,7 @@
 #include <time.h>
 #include <stdarg.h>
 
-static char g_log_lever;
+static LOG_LERVER_E g_log_lever = L_DEBUG;
 
 int vlog_in(LOG_LERVER_E lever, const char *format, ...)
 {
@@ -30,6 +30,8 @@ int vlog_in(LOG_LERVER_E lever, const char *format, ...)
 
     char buf[1024] = {0};
     int  time_len = 0;
+    int  msg_len = 0;
+    int  total_len = 0;
     va_list ap;
 
     time_t  tm = 0;
@@ -41,10 +43,18 @@ int vlog_in(LOG_LERVER_E lever, const char *format, ...)
                         (st_time.tm_hour) % 24, st_time.tm_min, st_time.tm_sec);
 
     va_start(ap, format);
-    vsnprintf(buf + time_len, sizeof(buf) - time_len, format, ap);
+    msg_len = vsnprintf(buf + time_len, sizeof(buf) - time_len, format, ap);
     va_end(ap);
+    if (msg_len < 0) {
+        return -1;
+    }
 
-    return write(1, buf, sizeof(buf));
+    total_len = time_len + msg_len;
+    if (total_len >= (int)sizeof(buf)) {
+        total_len = (int)sizeof(buf) - 1;
+    }
+
+    return write(1, buf, total_len);
 }
 
 void set_log_lever(LOG_LERVER_E lever)
