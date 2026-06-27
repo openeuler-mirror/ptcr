@@ -32,8 +32,13 @@ void MeasureResultCls::PrintAllResult()
     cout << "action\t|""count\t\t|""total spent\t\t|""average spent" << endl;
     for (auto item : m_measureResultVect) {
         long int avgSpent = 0;
-        if (item->Cnt > 2) {
+        if (item->Cnt >= 3) {
+            /* Trim-mean: drop the highest and the lowest, then average the rest. */
             avgSpent = (item->totalSpent - item->maxSpent - item->minSpent) / (item->Cnt - 2);
+        } else if (item->Cnt > 0) {
+            /* With 1 or 2 samples there is nothing to trim, fall back to the
+             * raw mean so the user does not see a misleading 0. */
+            avgSpent = item->totalSpent / item->Cnt;
         }
         cout << item->interfaceDesc << "\t|" << item->Cnt << "\t\t|" << item->totalSpent / 1000 <<
              "\t\t\t|" << avgSpent / 1000 << endl;
@@ -59,10 +64,13 @@ int MeasureResultCls::InsertMeasureItem(Measure_Result_T *measureRes, long int c
 
     m_mutex.lock();
     measureRes->totalSpent += currentSpent;
-    if (currentSpent < measureRes->minSpent || measureRes->minSpent == 0) {
+    if (!measureRes->minSpentSet || currentSpent < measureRes->minSpent) {
         measureRes->minSpent = currentSpent;
-    } else if (currentSpent > measureRes->maxSpent || measureRes->maxSpent == 0) {
+        measureRes->minSpentSet = true;
+    }
+    if (!measureRes->maxSpentSet || currentSpent > measureRes->maxSpent) {
         measureRes->maxSpent = currentSpent;
+        measureRes->maxSpentSet = true;
     }
     measureRes->Cnt++;
     m_mutex.unlock();
@@ -123,7 +131,10 @@ void FormatPrintCls::GenerateReport(std::string &filePath)
         string context = outter->m_measureDesc + "_" + outter->m_endPoint + " ";
         for (auto inner : outter->m_measureResultVect) {
             long int avg = 0;
-            if (inner->Cnt > 0) {
+            if (inner->Cnt >= 3) {
+                /* Trim-mean matches the value shown in formatPrint(). */
+                avg = (inner->totalSpent - inner->maxSpent - inner->minSpent) / (inner->Cnt - 2) / 1000;
+            } else if (inner->Cnt > 0) {
                 avg = inner->totalSpent / inner->Cnt / 1000;
             }
             context += to_string(avg) + " ";
