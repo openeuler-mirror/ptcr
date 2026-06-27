@@ -86,12 +86,17 @@ typedef struct {
     bool bSave;
     long int *spentUs;
     string *ContID;
+    /* Result of the underlying measure operation. 0 means success. The
+     * measure loop inspects this field to decide whether the spentUs sample
+     * is valid for statistics. */
+    int retVal;
 } Create_Cont_Args_T;
 
 typedef struct {
     string *contID;
     wrapperManager *wm;
     long int *spentUs;
+    int retVal;
 } Start_Cont_Args_T;
 
 typedef struct {
@@ -99,12 +104,14 @@ typedef struct {
     wrapperManager *wm;
     unsigned int timeOut;
     long int *spentUs;
+    int retVal;
 } Stop_Cont_Args_T;
 
 typedef struct {
     string *contID;
     wrapperManager *wm;
     long int *spentUs;
+    int retVal;
 } Remove_Cont_Args_T;
 
 typedef struct {
@@ -113,6 +120,7 @@ typedef struct {
     wrapperManager *wm;
     long int *spentUs;
     vector<string> runCmd;
+    int retVal;
 } Run_Cont_Args_T;
 
 typedef struct {

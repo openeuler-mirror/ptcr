@@ -35,7 +35,6 @@ void Free_Args(ARGS_TYPE *args[], int count)
         args[i] = NULL;
     }
     free(args);
-    args = NULL;
 }
 
 int Create_Args_Init
@@ -135,9 +134,17 @@ public:
         ret = Args_Init_Cbk(&args, contID, m_config, m_wrapperManager);
         RET_CHECK(ret, 0, return ret);
 
-        Measure_Func(&args);
-        m_measureResCls->InsertMeasureItem(m_measureResult, *(args.spentUs));
-        return ret;
+        int mret = (uintptr_t)Measure_Func(&args);
+        /* Only record the timing sample if the underlying operation
+         * succeeded; otherwise the spent time reflects a failure path and
+         * would pollute the average/max/min statistics. */
+        if (mret == 0 && args.retVal == 0) {
+            m_measureResCls->InsertMeasureItem(m_measureResult, *(args.spentUs));
+        } else {
+            LOG_ERROR("%s measure failed (mret=%d, args.retVal=%d)\n",
+                      m_interfaceDesc.c_str(), mret, args.retVal);
+        }
+        return (mret != 0) ? mret : args.retVal;
     }
 
     int Init()
@@ -199,7 +206,11 @@ public:
             RET_CHECK(ret, 0, goto FAILURE);
 
             ret = (uintptr_t)Measure_Func(&args);
-            RET_CHECK(ret, 0, goto FAILURE);
+            if (ret != 0 || args.retVal != 0) {
+                LOG_ERROR("Serial %s iteration %u failed (mret=%d, args.retVal=%d)\n",
+                          interfaceDesc.c_str(), i, ret, args.retVal);
+                goto FAILURE;
+            }
 
             m_measureResCls->InsertMeasureItem(MeasureResult, *(args.spentUs));
             if (args.spentUs) {
@@ -322,7 +333,14 @@ public:
 
         for (unsigned int i = 0; i < m_stdThrds.size(); i++) {
             m_stdThrds[i]->join();
-            m_measureResCls->InsertMeasureItem(measureResult, *(ArgsList[i]->spentUs));
+            /* Only record the sample if the worker succeeded; failed
+             * iterations would otherwise pollute min/max/avg. */
+            if (ArgsList[i]->retVal == 0) {
+                m_measureResCls->InsertMeasureItem(measureResult, *(ArgsList[i]->spentUs));
+            } else {
+                LOG_ERROR("Paraller %s iteration %u failed (args.retVal=%d)\n",
+                          interfaceDesc.c_str(), i, ArgsList[i]->retVal);
+            }
             delete m_stdThrds[i];
         }
 
