@@ -27,6 +27,32 @@ int MeasureResultCls::InsertMeasureReulst(Measure_Result_T *measureRes)
     return 0;
 }
 
+MeasureResultCls::~MeasureResultCls()
+{
+    for (auto item : m_measureResultVect) {
+        delete item;
+    }
+    m_measureResultVect.clear();
+}
+
+FormatPrintCls::~FormatPrintCls()
+{
+    for (auto item : m_measureResClsVect) {
+        delete item;
+    }
+    m_measureResClsVect.clear();
+
+    for (auto item : m_memDaemonVect) {
+        delete item;
+    }
+    m_memDaemonVect.clear();
+
+    for (auto item : m_memShimVect) {
+        delete item;
+    }
+    m_memShimVect.clear();
+}
+
 void MeasureResultCls::PrintAllResult()
 {
     cout << "action\t|""count\t\t|""total spent\t\t|""average spent" << endl;
