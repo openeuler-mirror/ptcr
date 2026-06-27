@@ -106,28 +106,43 @@ char *utils_generate_random_str(int len)
     int m = 256;
     char *str;
 
+    if (len <= 0 || (len % 2) != 0) {
+        /* len is the total output buffer length (including the trailing NUL)
+         * and must be an even number so that we can fill len-1 bytes with
+         * hex pairs (len/2 bytes -> len hex chars + 1 NUL). */
+        LOG_ERROR("Invalid random string length: %d (must be > 0 and even)\n", len);
+        return NULL;
+    }
+
     str = malloc(len * sizeof(char));
     NULL_PTR_CHECK(str, ERR_NULL);
 
-    len /= 2;
+    int hex_len = len / 2;
     fd = open("/dev/urandom", O_RDONLY);
     if (fd < 0) {
-        ERR_NULL;
+        int saved_errno = errno;
+        LOG_ERROR("Failed to open /dev/urandom: %s\n", strerror(saved_errno));
+        free(str);
+        return NULL;
     }
 
-    for (i = 0; i < len; i++) {
+    for (i = 0; i < hex_len; i++) {
         int nret;
         if (read(fd, &num, sizeof(int)) < 0) {
-            LOG_ERROR("Failed to read urandom value");
+            int saved_errno = errno;
+            LOG_ERROR("Failed to read urandom value: %s\n", strerror(saved_errno));
             close(fd);
-            ERR_NULL;
+            free(str);
+            return NULL;
         }
         unsigned char rs = (unsigned char)(num % m);
-        nret = snprintf((str + i * 2), ((len - i) * 2 + 1), "%02x", (unsigned int)rs);
-        if (nret < 0 || (size_t)nret >= ((len - i) * 2 + 1)) {
-            LOG_ERROR("Failed to snprintf random string");
+        /* 3 == strlen("xx") + 1 for the trailing NUL that snprintf writes */
+        nret = snprintf((str + i * 2), 3, "%02x", (unsigned int)rs);
+        if (nret < 0 || nret >= 3) {
+            LOG_ERROR("Failed to snprintf random string\n");
             close(fd);
-            ERR_NULL;
+            free(str);
+            return NULL;
         }
     }
 
