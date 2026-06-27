@@ -467,7 +467,12 @@ int measureCls::startMeasure(MeasureConfigCls *config)
         NULL_PTR_CHECK(cliWrapper, return -1);
 
         if (cliWrapper->init()) {
-            break;
+            /* A single CLI failing to initialise (e.g. isula not installed)
+             * should not prevent the remaining runtimes from being measured. */
+            LOG_ERROR("CLI wrapper init failed for %s, skip.\n",
+                      config->m_runtimeName[i].c_str());
+            delete cliWrapper;
+            continue;
         }
         WrapContInfoCls::GetInstance()->InsertWrapper(cliWrapper);
         runWrapperRepeat(config, cliWrapper);
@@ -480,7 +485,11 @@ int measureCls::startMeasure(MeasureConfigCls *config)
         NULL_PTR_CHECK(apiWrapper, return -1);
 
         if (apiWrapper->init()) {
-            break;
+            /* Same rationale as above: keep going for the remaining endpoints. */
+            LOG_ERROR("CRI wrapper init failed for %s, skip.\n",
+                      config->m_runtimeEndpoint[i].c_str());
+            delete apiWrapper;
+            continue;
         }
         WrapContInfoCls::GetInstance()->InsertWrapper(apiWrapper);
         runWrapperRepeat(config, apiWrapper);
