@@ -78,16 +78,21 @@ int ParserArgs(int argc, char **argv, OptArgs_T *optArgs)
 
 int main(int argc, char **argv)
 {
-    OptArgs_T *optArgs = (OptArgs_T *)UTILS_CALLOC(sizeof(OptArgs_T), RET_OUT_OF_MEMORY);
+    /* Use new/delete so that OptArgs_T's std::string members run their
+     * destructors and release their internal buffers. The previous UTILS_CALLOC
+     * + free(optArgs) combination skipped destructors and leaked. */
+    OptArgs_T *optArgs = new OptArgs_T();
 
     optArgs->configPath = "/etc/ptcr/ptcr.yml";
     if (argc > 1 && ParserArgs(argc, argv, optArgs)) {
+        delete optArgs;
         return -1;
     }
 
     MeasureConfigCls config(optArgs->configPath);
     if (config.Init()) {
         LOG_ERROR("Config Init failed, check if config file exit.\n");
+        delete optArgs;
         return -1;
     }
     config.ConfigOptArgs(optArgs);
@@ -96,7 +101,7 @@ int main(int argc, char **argv)
 
     measureCls msCls;
     msCls.startMeasure(&config);
-    free(optArgs);
+    delete optArgs;
 
     return 0;
 }
