@@ -159,7 +159,9 @@ int get_cont_id_by_name(const char *endpoint, const char *name, char id[CONTAINE
     NULL_PTR_CHECK(name, RET_INVALID_INPUT_PARAM);
 
     char *command = (char *)UTILS_CALLOC(sizeof(char) * MAX_COMMAND_SIZE, RET_OUT_OF_MEMORY);
-    sprintf(command, "%s ps | grep %s | awk '{print $1}'", endpoint, name);
+    /* snprintf is used instead of sprintf to avoid writing past the end of
+     * `command` when endpoint or name is long. */
+    snprintf(command, MAX_COMMAND_SIZE, "%s ps | grep %s | awk '{print $1}'", endpoint, name);
 
     utils_exe_cmd_read_out(command, id, CONTAINER_ID_SIZE);
 
