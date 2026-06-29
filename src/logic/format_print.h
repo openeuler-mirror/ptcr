@@ -53,7 +53,7 @@ public:
         : m_measureDesc(measureDesc), m_endPoint(endPoint)
     {
     };
-    ~MeasureResultCls() {};
+    ~MeasureResultCls();
 
     std::string     m_measureDesc;
     std::string     m_endPoint;
@@ -85,7 +85,7 @@ public:
 
 private:
     FormatPrintCls() {};
-    ~FormatPrintCls() {};
+    ~FormatPrintCls();
 
     std::vector<MeasureResultCls *> m_measureResClsVect; // time
     std::vector<Mem_Daemon_T *> m_memDaemonVect; // daemon memory
