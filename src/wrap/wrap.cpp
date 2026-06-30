@@ -184,7 +184,7 @@ int MeasureStartInterface(Start_Cont_Args_T *startArgs)
     NULL_PTR_CHECK(startArgs->spentUs, RET_INVALID_INPUT_PARAM);
 
     gettimeofday(&before, NULL);
-    startArgs->wm->startContainer(*startArgs->contID);
+    startArgs->retVal = startArgs->wm->startContainer(*startArgs->contID);
     gettimeofday(&now, NULL);
 
     *(startArgs->spentUs) = (now.tv_usec - before.tv_usec) + (now.tv_sec - before.tv_sec) * 1000000;
@@ -201,7 +201,7 @@ int MeasureStopInterface(Stop_Cont_Args_T *stopArgs)
     NULL_PTR_CHECK(stopArgs->spentUs, RET_INVALID_INPUT_PARAM);
 
     gettimeofday(&before, NULL);
-    stopArgs->wm->stopContainer(*stopArgs->contID, stopArgs->timeOut);
+    stopArgs->retVal = stopArgs->wm->stopContainer(*stopArgs->contID, stopArgs->timeOut);
     gettimeofday(&now, NULL);
 
     *(stopArgs->spentUs) = (now.tv_usec - before.tv_usec) + (now.tv_sec - before.tv_sec) * 1000000;
@@ -218,7 +218,7 @@ int MeasureRMInterface(Remove_Cont_Args_T *removeArgs)
     NULL_PTR_CHECK(removeArgs->spentUs, RET_INVALID_INPUT_PARAM);
 
     gettimeofday(&before, NULL);
-    removeArgs->wm->rmContainer(*removeArgs->contID);
+    removeArgs->retVal = removeArgs->wm->rmContainer(*removeArgs->contID);
     gettimeofday(&now, NULL);
 
     *(removeArgs->spentUs) = (now.tv_usec - before.tv_usec) + (now.tv_sec - before.tv_sec) * 1000000;
