@@ -47,6 +47,7 @@ int Create_Args_Init
     args->ContID = contID;
     args->imageName = (*m_config).m_imageName;
     args->wm = m_wrapperManager;
+    args->retVal = 0;
     args->spentUs = (long int *)UTILS_CALLOC(sizeof(long int), RET_OUT_OF_MEMORY);
 
     return 0;
@@ -60,6 +61,7 @@ int Start_Args_Init
 
     args->contID = contID;
     args->wm = m_wrapperManager;
+    args->retVal = 0;
     args->spentUs = (long int *)UTILS_CALLOC(sizeof(long int), RET_OUT_OF_MEMORY);
 
     return 0;
@@ -74,6 +76,7 @@ int Stop_Args_Init
     args->contID = contID;
     args->timeOut = (*m_config).m_timeOut;
     args->wm = m_wrapperManager;
+    args->retVal = 0;
     args->spentUs = (long int *)UTILS_CALLOC(sizeof(long int), RET_OUT_OF_MEMORY);
 
     return 0;
@@ -87,6 +90,7 @@ int Remove_Args_Init
 
     args->contID = contID;
     args->wm = m_wrapperManager;
+    args->retVal = 0;
     args->spentUs = (long int *)UTILS_CALLOC(sizeof(long int), RET_OUT_OF_MEMORY);
 
     return 0;
@@ -101,6 +105,7 @@ int Run_Args_Init
     args->contID = contID;
     args->imageName = m_config->m_imageName;
     args->runCmd = m_config->m_runContCmd;
+    args->retVal = 0;
     args->spentUs = (long int *)UTILS_CALLOC(sizeof(long int), RET_OUT_OF_MEMORY);
     args->wm = m_wrapperManager;
 
@@ -226,6 +231,8 @@ FAILURE:
 
 int MeasureSeriallyCls::startWithMixedCmd()
 {
+    int ret = 0;
+
     m_measureResCls = new MeasureResultCls("searially", m_wrapperManager->m_endPoint);
 
     MixCmdCls *mixedCreate = new MixCmdCls("Create", m_wrapperManager, m_config, m_measureResCls);
@@ -236,23 +243,29 @@ int MeasureSeriallyCls::startWithMixedCmd()
 
     while (m_cnt--) {
         string *contID = new string;
-        mixedCreate->run(contID, Create_Args_Init, (MEASURE_FUNC_DEF)MeasureCreateInterface);
-        mixedStart->run(contID, Start_Args_Init, (MEASURE_FUNC_DEF)MeasureStartInterface);
-        mixedStop->run(contID, Stop_Args_Init, (MEASURE_FUNC_DEF)MeasureStopInterface);
-        mixedRemove->run(contID, Remove_Args_Init, (MEASURE_FUNC_DEF)MeasureRMInterface);
-        mixedRun->run(contID, Run_Args_Init, (MEASURE_FUNC_DEF)MeasureRunInterface);
+        ret = mixedCreate->run(contID, Create_Args_Init, (MEASURE_FUNC_DEF)MeasureCreateInterface);
+        RET_CHECK(ret, 0, goto OUT);
+        ret = mixedStart->run(contID, Start_Args_Init, (MEASURE_FUNC_DEF)MeasureStartInterface);
+        RET_CHECK(ret, 0, goto OUT);
+        ret = mixedStop->run(contID, Stop_Args_Init, (MEASURE_FUNC_DEF)MeasureStopInterface);
+        RET_CHECK(ret, 0, goto OUT);
+        ret = mixedRemove->run(contID, Remove_Args_Init, (MEASURE_FUNC_DEF)MeasureRMInterface);
+        RET_CHECK(ret, 0, goto OUT);
+        ret = mixedRun->run(contID, Run_Args_Init, (MEASURE_FUNC_DEF)MeasureRunInterface);
+        RET_CHECK(ret, 0, goto OUT);
     }
 
     FormatPrintCls::GetInstance()->InsertMeasureCls(m_measureResCls);
     WrapContInfoCls::GetInstance()->CleanAllCont(m_wrapperManager); // clean saved container info
 
+OUT:
     delete mixedCreate;
     delete mixedStart;
     delete mixedStop;
     delete mixedRemove;
     delete mixedRun;
 
-    return 0;
+    return ret;
 }
 
 int MeasureSeriallyCls::startWithoutMixedCmd()
