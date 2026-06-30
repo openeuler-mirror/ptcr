@@ -107,14 +107,13 @@ char *utils_generate_random_str(int len)
     char *str;
 
     if (len <= 0 || (len % 2) != 0) {
-        /* len is the total output buffer length (including the trailing NUL)
-         * and must be an even number so that we can fill len-1 bytes with
-         * hex pairs (len/2 bytes -> len hex chars + 1 NUL). */
+        /* len is the number of hex characters to produce (must be even).
+         * len/2 random bytes are encoded as len hex digits plus a NUL. */
         LOG_ERROR("Invalid random string length: %d (must be > 0 and even)\n", len);
         return NULL;
     }
 
-    str = malloc(len * sizeof(char));
+    str = malloc((size_t)(len + 1));
     NULL_PTR_CHECK(str, ERR_NULL);
 
     int hex_len = len / 2;
@@ -160,8 +159,11 @@ int utils_exe_cmd_read_out(const char *command, char *out, int size)
     NULL_PTR_CHECK(pF, ERR_FAILURE);
 
     if (out != NULL) {
-        fgets(out, size, pF);
-        strtok(out, "\n");
+        if (fgets(out, size, pF) != NULL) {
+            strtok(out, "\n");
+        } else {
+            out[0] = '\0';
+        }
     }
 
     pclose(pF);
@@ -187,20 +189,35 @@ int get_cont_id_by_name(const char *endpoint, const char *name, char id[CONTAINE
 int read_memory(const char *id, int *rss)
 {
     NULL_PTR_CHECK(id, RET_INVALID_INPUT_PARAM);
+    NULL_PTR_CHECK(rss, RET_INVALID_INPUT_PARAM);
 
     char *command = (char *)UTILS_CALLOC(sizeof(char) * MAX_COMMAND_SIZE, RET_OUT_OF_MEMORY);
-    sprintf(command, "ps -aux | grep %s", id);
+    snprintf(command, MAX_COMMAND_SIZE, "ps -aux | grep %s", id);
 
     FILE *pF = popen(command, "r");
-    NULL_PTR_CHECK(pF, ERR_FAILURE);
+    if (pF == NULL) {
+        free(command);
+        return -1;
+    }
 
     char *out = (char *)UTILS_CALLOC(sizeof(char) * MAX_PS_READ_SIZE, RET_OUT_OF_MEMORY);
-    fgets(out, MAX_PS_READ_SIZE, pF);
+    if (fgets(out, MAX_PS_READ_SIZE, pF) == NULL) {
+        free(out);
+        pclose(pF);
+        free(command);
+        return -1;
+    }
 
     char *delim = " ";
     char *rss_str = strtok(out, delim);
     for (int i = 0; i < PS_RSS_INDEX - 1; i++) {
         rss_str = strtok(NULL, delim);
+    }
+    if (rss_str == NULL) {
+        free(out);
+        pclose(pF);
+        free(command);
+        return -1;
     }
     *rss = atoi(rss_str);
 
