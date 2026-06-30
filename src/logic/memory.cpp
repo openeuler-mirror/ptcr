@@ -3,6 +3,7 @@
 #include "utils.h"
 #include "container_manager.h"
 #include "format_print.h"
+#include <new>
 
 int MeasureMemImpl::PsDaemonOutsideFunc()
 {
@@ -17,7 +18,8 @@ int MeasureMemImpl::PsDaemonOutsideFunc()
         }
         it->second += rss;
 
-        Mem_Daemon_T *daemon = (Mem_Daemon_T *)UTILS_CALLOC(sizeof(Mem_Daemon_T), RET_OUT_OF_MEMORY);
+        Mem_Daemon_T *daemon = new (std::nothrow) Mem_Daemon_T();
+        NULL_PTR_CHECK(daemon, RET_OUT_OF_MEMORY);
         daemon->daemonName = it->first;
         daemon->daemonMemory = it->second;
         FormatPrintCls::GetInstance()->InsertDaemonRes(daemon);
@@ -73,7 +75,8 @@ int MeasureMemImpl::PsShimOutsideFunc()
             delete contID;
         }
 
-        Mem_Shim_T *shim = (Mem_Shim_T *)UTILS_CALLOC(sizeof(Mem_Shim_T), RET_OUT_OF_MEMORY);
+        Mem_Shim_T *shim = new (std::nothrow) Mem_Shim_T();
+        NULL_PTR_CHECK(shim, RET_OUT_OF_MEMORY);
         shim->endpoint = it->first;
         shim->shimTotalMemory = it->second;
         shim->cnt = m_cnt;
