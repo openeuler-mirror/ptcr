@@ -25,6 +25,8 @@ typedef struct {
     long int totalSpent;
     long int maxSpent;
     long int minSpent;
+    bool minSpentSet;
+    bool maxSpentSet;
     int Cnt;
 } Measure_Result_T;
 
