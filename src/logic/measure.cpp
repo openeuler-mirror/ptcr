@@ -18,6 +18,7 @@
 #include <sys/time.h>
 #include <thread>
 #include <mutex>
+#include <new>
 #include "logger.h"
 #include "utils.h"
 #include "container_manager.h"
@@ -149,7 +150,8 @@ public:
 
     int Init()
     {
-        m_measureResult = (Measure_Result_T *)UTILS_CALLOC(sizeof(Measure_Result_T), RET_OUT_OF_MEMORY);
+        m_measureResult = new (std::nothrow) Measure_Result_T();
+        NULL_PTR_CHECK(m_measureResult, RET_OUT_OF_MEMORY);
         m_measureResult->interfaceDesc = m_interfaceDesc;
 
         m_measureResCls->InsertMeasureReulst(m_measureResult);
@@ -188,8 +190,8 @@ public:
         ARGS_TYPE args;
         vector<Cont_Info_T *> contVect;
 
-        Measure_Result_T *MeasureResult =
-            (Measure_Result_T *)UTILS_CALLOC(sizeof(Measure_Result_T), RET_OUT_OF_MEMORY);
+        Measure_Result_T *MeasureResult = new (std::nothrow) Measure_Result_T();
+        NULL_PTR_CHECK(MeasureResult, RET_OUT_OF_MEMORY);
         MeasureResult->interfaceDesc = interfaceDesc;
         m_measureResCls->InsertMeasureReulst(MeasureResult);
         WrapContInfoCls::GetInstance()->GetContVectByWrapper(m_wrapperManager, &contVect);
@@ -309,7 +311,8 @@ public:
 
         vector<Cont_Info_T *> contVect;
         WrapContInfoCls::GetInstance()->GetContVectByWrapper(m_wrapperManager, &contVect);
-        Measure_Result_T *measureResult = (Measure_Result_T *)UTILS_CALLOC(sizeof(Measure_Result_T), RET_OUT_OF_MEMORY);
+        Measure_Result_T *measureResult = new (std::nothrow) Measure_Result_T();
+        NULL_PTR_CHECK(measureResult, RET_OUT_OF_MEMORY);
         measureResult->interfaceDesc = interfaceDesc;
 
         m_measureResCls->InsertMeasureReulst(measureResult);
