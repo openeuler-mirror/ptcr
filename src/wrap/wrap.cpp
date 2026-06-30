@@ -151,7 +151,6 @@ int wrapperManager::rmContainer(string ContId)
 
 int MeasureCreateInterface(Create_Cont_Args_T *CreateArgs)
 {
-    int ret = 0;
     struct timeval before, now;
 
     NULL_PTR_CHECK(CreateArgs, RET_INVALID_INPUT_PARAM);
@@ -159,15 +158,12 @@ int MeasureCreateInterface(Create_Cont_Args_T *CreateArgs)
     NULL_PTR_CHECK(CreateArgs->spentUs, RET_INVALID_INPUT_PARAM);
 
     gettimeofday(&before, NULL);
-    ret = CreateArgs->wm->createContainer(CreateArgs->imageName, CreateArgs->ContID);
+    CreateArgs->retVal = CreateArgs->wm->createContainer(CreateArgs->imageName, CreateArgs->ContID);
     gettimeofday(&now, NULL);
 
-    if (ret != 0) {
+    if (CreateArgs->retVal != 0) {
         LOG_ERROR("Create Container failed!\n");
-        return ret;
-    }
-
-    if (CreateArgs->bSave && !(*CreateArgs->ContID).empty()) {
+    } else if (CreateArgs->bSave && !(*CreateArgs->ContID).empty()) {
         WrapContInfoCls::GetInstance()->ContBindWrapper(CreateArgs->ContID, STAT_CREATED, CreateArgs->wm);
     }
     *(CreateArgs->spentUs) = (now.tv_usec - before.tv_usec) + (now.tv_sec - before.tv_sec) * 1000000;
@@ -235,15 +231,15 @@ int MeasureRunInterface(Run_Cont_Args_T *runArgs)
     NULL_PTR_CHECK(runArgs->spentUs, RET_INVALID_INPUT_PARAM);
 
     gettimeofday(&before, NULL);
-    int ret = runArgs->wm->runContainer(runArgs->imageName, runArgs->runCmd, runArgs->contID);
+    runArgs->retVal = runArgs->wm->runContainer(runArgs->imageName, runArgs->runCmd, runArgs->contID);
     gettimeofday(&now, NULL);
 
-    if (ret == 0) {
+    if (runArgs->retVal == 0) {
         // save running container id for clean resource.
         WrapContInfoCls::GetInstance()->ContBindWrapper(runArgs->contID, STAT_RUNNING, runArgs->wm);
     }
 
     *(runArgs->spentUs) = (now.tv_usec - before.tv_usec) + (now.tv_sec - before.tv_sec) * 1000000;
 
-    return ret;
+    return 0;
 }
