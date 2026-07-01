@@ -38,14 +38,28 @@ int cliWrapperCls::removeImage(string &imageName)
 
 int cliWrapperCls::createContainer(string &imageName, string *contStr)
 {
-    char *cont_id = utils_generate_random_str(4);
-    const char *argv[] = {m_cliName.c_str(), "create", "--name", cont_id, imageName.c_str(), NULL};
+    /* 16 chars of hex == 8 bytes of entropy, also matches typical container
+     * engine (iSulad/Docker) name length limits and avoids the high collision
+     * rate of the previous 4-char implementation. */
+    char *cont_id = utils_generate_random_str(16);
+    NULL_PTR_CHECK(cont_id, RET_OUT_OF_MEMORY);
+
+    /* -t allocates a pseudo-TTY which keeps the container in "running"
+     * state after creation. Without -t, busybox-based containers exit
+     * immediately, and any subsequent start/stop timing measurement is
+     * meaningless (the container is no longer in the running state the
+     * user thinks they are measuring). See openeuler/ptcr issue #1. */
+    const char *argv[] = {m_cliName.c_str(), "create", "-t", "--name", cont_id,
+                           imageName.c_str(), NULL};
 
     int ret = utils_execute_process(m_cliName.c_str(), (char * const *)argv);
-    *contStr = cont_id;
+    if (contStr != NULL) {
+        *contStr = cont_id;
+    }
     free(cont_id);
 
-    LOG_DEBUG("%s create cont %s witch image %s, ret:%d\n", m_cliName.c_str(), (*contStr).c_str(), imageName.c_str(), ret);
+    LOG_DEBUG("%s create cont %s witch image %s, ret:%d\n", m_cliName.c_str(),
+              contStr ? contStr->c_str() : "(null)", imageName.c_str(), ret);
 
     return 0;
 }
@@ -62,11 +76,11 @@ int cliWrapperCls::runContainer(string &imageName, vector<string> &cmd, string *
 {
     int i = 6;
     int argc = cmd.size() + 7;
-    char *cont_id = utils_generate_random_str(4);
+    char *cont_id = utils_generate_random_str(16);
     NULL_PTR_CHECK(cont_id, RET_OUT_OF_MEMORY);
 
     char **argv = (char **)UTILS_CALLOC(sizeof(char *) * argc, ERR_FAILURE);
-    NULL_PTR_CHECK(argv, RET_OUT_OF_MEMORY);
+    NULL_PTR_CHECK(argv, { free(cont_id); RET_OUT_OF_MEMORY; });
 
     argv[0] = (char *)m_cliName.c_str();
     argv[1] = (char *)"run";
@@ -80,11 +94,13 @@ int cliWrapperCls::runContainer(string &imageName, vector<string> &cmd, string *
     argv[i] = NULL;
 
     int ret = utils_execute_process(m_cliName.c_str(), (char * const *)argv);
-    *contStr = cont_id;
+    if (contStr != NULL) {
+        *contStr = cont_id;
+    }
     free(argv);
     free(cont_id);
 
-    LOG_DEBUG("run cont %s ret:%d\n", (*contStr).c_str(), ret);
+    LOG_DEBUG("run cont %s ret:%d\n", contStr ? contStr->c_str() : "(null)", ret);
 
     return ret;
 }
@@ -99,7 +115,17 @@ int cliWrapperCls::stopContainer(string contId, int timeOut)
     if (timeOut > 0) {
         const char *argv[] = {m_cliName.c_str(), "stop", "--time", cTimeOut, contId.c_str(), NULL};
         ret = utils_execute_process(m_cliName.c_str(), (char * const *)argv);
+    } else if (timeOut == 0) {
+        /* timeOut == 0 means "no graceful timeout": pass --time 0 to the
+         * engine so it returns as soon as the container has acked the
+         * SIGTERM. -f would send SIGKILL immediately and measure a forced
+         * kill instead of a graceful stop, which is what users want when
+         * they explicitly set time_out=0 in the config (issue #1). */
+        const char *argv[] = {m_cliName.c_str(), "stop", "--time", "0", contId.c_str(), NULL};
+        ret = utils_execute_process(m_cliName.c_str(), (char * const *)argv);
     } else {
+        /* timeOut < 0: caller wants a forced kill (used by ResourceRls
+         * cleanup). */
         const char *argv[] = {m_cliName.c_str(), "stop", "-f", contId.c_str(), NULL};
         ret = utils_execute_process(m_cliName.c_str(), (char * const *)argv);
     }
